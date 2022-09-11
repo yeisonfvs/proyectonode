@@ -54,15 +54,14 @@ router.delete('/documentos/:id',(req, res)=>{
 });
 
 //modificar
-router.put('/documentos/:id',(req, res)=>{
+router.put('/documentos/editar:id',(req, res)=>{
     const{id}=req.params
-    const{fecha_registro,id_empleado,tipo,nombre,ruta,id_cliente} = req.body
+    const{fecha_registro,id_empleado,tipo,nombre,id_cliente} = req.body
     let sql = `update archivos set
                fecha_registro ='${fecha_registro}'
                id_empleado = '${id_empleado}'
                tipo = '${tipo}'
                nombre ='${nombre}'
-               ruta = '${ruta}'
                id_cliente = '${id_cliente}'
                where id_archivo = '${id}'`
     conexion.query(sql,(err, rows, fields)=>{
@@ -83,7 +82,7 @@ module.exports= router;
 //get clientes
 router.get('/clientes', (req, res)=>{
 
-    let sql = 'SELECT c.id_cliente, t.nombres,t.apellidos,t.documento,t.telefono,t.direccion,t.correo,c.fecha_vinculacion from clientes AS c INNER JOIN terceros AS t ON t.id_tercero = c.id_tercero'
+    let sql = 'SELECT c.id_cliente, t.nombres,t.apellidos,t.identificacion,t.telefono,t.direccion,t.correo,c.fecha_vinculacion from clientes AS c INNER JOIN terceros AS t ON t.id_tercero = c.id_tercero'
     conexion.query(sql,(err, rows, fields)=>{
         if(err) throw err;
         else{
@@ -154,4 +153,45 @@ router.put('/clientes/:id',(req, res)=>{
     })
 
 
+})
+
+//agregar registro usuario
+router.post('/registro',(req, res)=>{
+    console.log(req);
+    const{nombres,apellidos,tipoIdentificacion,identificacion,direccion,telefono,correo,nombreUsuario,contrasena} = req.body
+
+    let sqlTercero = `insert into terceros(nombres, apellidos, id_tipo_documento, identificacion,direccion,telefono,correo)
+     values('${nombres}','${apellidos}','${tipoIdentificacion}','${identificacion}','${direccion}','${telefono}','${correo}')`
+    conexion.query(sqlTercero, async(err, rows, fields)=>{
+        if(err) throw err;
+        else{
+            console.log(rows);
+            let sqlUsuario = `insert into usuarios(usuario,contrasenia,id_tercero) values('${nombreUsuario}','${contrasena}', ${rows.insertId})`
+            conexion.query(sqlUsuario,(err, rows, fields)=>{
+                if(err) throw err;
+                else{
+                    res.json({status:'Usuario registrado correctamente'})
+                }
+            })
+        }
+    })
+});
+
+//login usuario
+
+router.post('/login',(req, res)=>{
+    const {nombreUsuario,contrasenia}=req.body
+    let sqlLogin = `select  usuario, contrasenia from usuarios where usuario = '${nombreUsuario}' and contrasenia = '${contrasenia}' `
+    conexion.query(sqlLogin,(err, rows, fields)=>{
+        if(err) throw err;
+        else{
+            console.log(rows);
+            if(rows.length){
+                res.json({message:'usuario logueado', status: 1})
+            } else {
+                res.json({message:'Usuario y/o contrasena incorrectas', status: 0})
+            }
+            
+        }
+    })
 })
